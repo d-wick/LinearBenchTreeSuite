@@ -1,5 +1,3 @@
-![LinearBenchTreeSuite Banner](path/to/banner.png)
-
 # 📘 LinearBenchTreeSuite  
 ### A Modular Benchmarking Framework for Rolling‑Window Time‑Series Forecasting  
 **Case Study: Monthly New‑Car Sales by Manufacturer**
