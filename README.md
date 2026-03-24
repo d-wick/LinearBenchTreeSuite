@@ -191,7 +191,7 @@ This keeps the architecture consistent and scalable.
 
 ---
 
-## 🙏 Acknowledgment
+## 🙏 Acknowledgment 
 
 Some modeling concepts — particularly around rolling‑window forecasting and tree‑based model evaluation — were inspired by  
 **_Data Science for Supply Chain Forecasting_ by Nicolas Vandeput**.  
