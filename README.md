@@ -3,219 +3,160 @@
 </p>
 
 # 📘 LinearBenchTreeSuite  
-### A Modular Benchmarking Framework for Rolling‑Window Time‑Series Forecasting  
+### A Modular, Installable Benchmarking Framework for Rolling‑Window Time‑Series Forecasting
+
 **Case Study: Monthly New‑Car Sales by Manufacturer**
 
-LinearBenchTreeSuite is a modular, extensible machine‑learning framework designed to benchmark multiple regression models on structured time‑series forecasting tasks.  
-Using publicly available monthly new‑car sales data as a case study, the project evaluates four model families:
+LinearBenchTreeSuite is a modular, extensible machine‑learning framework designed to benchmark multiple regression models on structured time‑series forecasting tasks. Using publicly available monthly new‑car sales data as a case study, the project evaluates four model families:
 
-- **Linear Regression** (baseline)  
-- **Decision Tree**  
-- **Random Forest**  
+- **Linear Regression** (baseline)
+- **Decision Tree**
+- **Random Forest**
 - **Extra Trees**
 
-The framework emphasizes clarity, reproducibility, and extensibility — making it suitable both as a portfolio project and as a foundation for real‑world forecasting pipelines.
+The framework emphasizes **clarity**, **reproducibility**, and **extensibility**, and is now structured as a **proper Python package** that supports both normal and editable installs.
 
 ---
 
 ## 🌟 Key Features
 
-- **Modular architecture** — each model family lives in its own subpackage with training, prediction, evaluation, and tuning utilities.  
-- **Rolling‑window dataset creation** — consistent supervised‑learning windows for fair model comparison.  
-- **Unified evaluation metric (MAE%)** — easy cross‑model comparison.  
-- **Feature importance extraction** — interpretability for tree‑based models.  
-- **Hyperparameter optimization** — RandomizedSearchCV for Decision Tree, Random Forest, and Extra Trees.  
-- **Notebook‑driven analysis** — clean, reproducible workflow for exploration and visualization.
+- **Package‑first architecture** — all reusable code lives under `src/linearbenchtree/`
+- **Modular model families** — consistent train / predict / evaluate / tune interfaces
+- **Rolling‑window dataset creation** — fair, supervised comparisons
+- **Unified evaluation metric (MAE%)**
+- **Feature importance extraction** for tree‑based models
+- **Hyperparameter optimization** via `RandomizedSearchCV`
+- **Notebook‑driven analysis**, backed by importable package code
 
 ---
 
+## 📦 Installation
+
+### Option 1: Normal install (recommended for users)
+
+Use this when you want to **use** the package without modifying it:
+
+```bash
+pip install .
+````
+
+Or directly from GitHub:
+
+```bash
+pip install git+https://github.com/<your-username>/LinearBenchTreeSuite.git
+```
+
+This mirrors how end users and CI systems install the package.
+
+***
+
+### Option 2: Editable install (recommended for development)
+
+Use this when you are **actively developing** the package or running notebooks:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Editable installs link Python directly to the source code, so changes to `.py` files are picked up immediately.
+
+***
+
+## 📓 Notebook Workflow (Development)
+
+When working in Jupyter notebooks during development:
+
+1.  Install the package in editable mode
+2.  Enable IPython autoreload at the top of the notebook:
+
+```python
+%load_ext autoreload
+%autoreload 2
+```
+
+This allows you to edit package code under `src/linearbenchtree/` and see changes without restarting the kernel.
+
+***
+
 ## 📂 Project Structure
 
-```
+```text
 project/
 │
 ├── data/
-│   ├── external/
-│   ├── interim/
-│   ├── processed/
-│   │   └── new_car_sales_by_make.csv
-│   └── raw/
+│   └── processed/
+│       └── new_car_sales_by_make.csv
 │
 ├── notebooks/
-│   ├── analysis/
-│   │   └── LinearBenchTreeSuite_Example.ipynb
-│   └── guides/
+│   └── analysis/
+│       └── LinearBenchTreeSuite_Example.ipynb
 │
 ├── src/
-│   ├── dataprocessing/
-│   │   ├── benchmark_linear_regr.py
-│   │   ├── data_loader_processed.py
-│   │   └── dataset_creation.py
-│   │
-│   ├── decisiontree/
-│   │   ├── parameter_opt.py
-│   │   └── regression_tree.py
-│   │
-│   ├── exrandomtree/
-│   │   └── ex_random_tree.py
-│   │
-│   ├── randomforest/
-│   │   └── random_forest.py
-│   │
-│   └── __init__.py
+│   └── linearbenchtree/
+│       ├── dataprocessing/
+│       ├── decisiontree/
+│       ├── randomforest/
+│       ├── exrandomtree/
+│       └── __init__.py
 │
+├── pyproject.toml
 ├── ARCHITECTURE.md
 ├── EXTENDING.md
 └── README.md
 ```
 
----
+Only code under `src/linearbenchtree/` is installed and importable.
 
-## 📊 Dataset Overview
-
-The case‑study dataset contains **monthly new‑car sales by manufacturer**, pivoted into a modeling‑friendly structure:
-
-- **Rows** → manufacturers  
-- **Columns** → months (`YYYY‑MM`)  
-- **Values** → units sold  
-
-This format enables rolling‑window supervised learning.  
-For example, a 12‑month window predicts the next month’s sales.
-
----
-
-## 🔧 Pipeline Overview
-
-### **1. Data Loading**  
-`data_loader_processed.py` loads the processed CSV from `data/processed/`.
-
-### **2. Rolling‑Window Dataset Creation**  
-`dataset_creation.datasets()` produces:
-
-- `X_train` — past 12 months  
-- `Y_train` — next‑month target  
-- `X_test`, `Y_test` — held‑out evaluation set  
-
-### **3. Model Training & Tuning**  
-Each model family follows the same structure:
-
-#### **Linear Regression (Baseline)**  
-- No tuning  
-- Establishes a performance floor  
-- Implemented in `benchmark_linear_regr.py`
-
-#### **Decision Tree**  
-- Tuning via `parameter_opt.py`  
-- Training & evaluation via `regression_tree.py`
-
-#### **Random Forest**  
-- Tuning via `optimize_forest()`  
-- Feature importance extraction included
-
-#### **Extra Trees**  
-- More randomness → often best performance  
-- Feature importance extraction included
-
-### **4. Evaluation Metric**  
-All models use **Mean Absolute Error Percentage (MAE%)**:
-
-\[
-\text{MAE\%} = \frac{\text{mean}(|y - \hat{y}|)}{\text{mean}(y)}
-\]
-
----
-
-## 🧪 Model Comparison (MAE%)
-
-| Model              | Train MAE% | Test MAE% |
-|-------------------|------------|-----------|
-| Linear Regression | 17.85      | 17.82     |
-| Decision Tree     | 16.80      | 18.13     |
-| Random Forest     | 12.05      | 17.68     |
-| Extra Trees       | 11.54      | 17.31     |
-
-**Insight:**  
-Tree‑based models outperform Linear Regression, with **Extra Trees** and **Random Forest** delivering the strongest results.
-
----
-
-## 📈 Visuals in the Notebook
-
-### **Feature Importance**  
-Random Forest and Extra Trees modules include built‑in feature importance extraction.
-
-### **Actual vs Predicted**  
-The notebook overlays predictions from all models to compare performance visually.
-
----
+***
 
 ## 🚀 Usage
 
-### **Run the Analysis Notebook**  
-Located in:
+### Running the analysis notebook
 
-```
-notebooks/analysis/
-```
+The primary demonstration notebook lives in:
+
+    notebooks/analysis/LinearBenchTreeSuite_Example.ipynb
 
 It demonstrates:
 
-- dataset creation  
-- model training  
-- tuning  
-- evaluation  
-- visualization  
+*   dataset creation
+*   model training
+*   tuning
+*   evaluation
+*   visualization
 
-### **Using the Modular Code in Scripts**  
-Each model family exposes:
+***
 
-- `train_*`  
-- `predict_*`  
-- `evaluate_*`  
-- `optimize_*` (where applicable)  
+### Using the package in scripts
 
-This makes experimentation and extension straightforward.
+All model families expose consistent functions:
 
----
+```python
+from linearbenchtree.dataprocessing.data_loader_processed import load_data
+from linearbenchtree.randomforest.random_forest import train_forest
+```
 
-## 🧱 Adding a New Model (High‑Level Guide)
+This makes the framework reusable outside notebooks.
 
-To add a new model family:
+***
 
-1. Create a new subpackage under `src/` (e.g., `xgboost/`)  
-2. Add:  
-   - `parameter_opt.py` (optional)  
-   - `train_model.py`  
-   - `predict_model.py`  
-   - `evaluate_model.py`  
-3. Follow the same function signatures as existing models  
-4. Import and run in the notebook or scripts  
+## 📐 Architecture & Extension
 
-This keeps the architecture consistent and scalable.
+*   For a system‑level view of how data, models, and notebooks interact, see  
+    ➡️ **ARCHITECTURE.md**
 
----
+*   For guidance on adding new models, features, or metrics, see  
+    ➡️ **EXTENDING.md**
 
-## 🙏 Acknowledgment 
-
-Some modeling concepts — particularly around rolling‑window forecasting and tree‑based model evaluation — were inspired by  
-**_Data Science for Supply Chain Forecasting_ by Nicolas Vandeput**.  
-The implementation, modular structure, and extensions in this repository are my own.
-
----
+***
 
 ## 🏁 Key Takeaways
 
-- Tree‑based models outperform Linear Regression for this forecasting task  
-- Extra Trees provides the best overall accuracy  
-- Feature importance reveals which historical months matter most  
-- The modular design makes the framework easy to extend and reuse  
-- The notebook provides a clear, reproducible workflow for analysis
-
----
-
-## 📐 Project Architecture
-
-For a high‑level overview of how the data, models, and modules interact, see:
-
-➡️ **[ARCHITECTURE.md](ARCHITECTURE.md)**
-
+*   Tree‑based models outperform Linear Regression for this task
+*   Extra Trees delivers the strongest overall accuracy
+*   Feature importance reveals which historical months matter most
+*   The framework is now:
+    *   installable
+    *   testable
+    *   extensible
+    *   reusable across projects

@@ -1,99 +1,129 @@
-# 🧱 How to Extend This Framework  
-### Adding New Models, Features, or Workflows
+# 🧱 Extending LinearBenchTreeSuite
+### Adding Models, Features, Metrics, and Workflows
 
-LinearBenchTreeSuite was intentionally designed to be **modular**, **predictable**, and **easy to extend**. Whether you want to add a new model family, incorporate additional features, or build new evaluation workflows, the architecture supports clean, low‑friction expansion.
+LinearBenchTreeSuite is designed to be **modular**, **package‑first**, and **easy to extend**.  
+This guide explains how to extend the framework correctly now that it is a **proper Python package**.
 
-This guide outlines the recommended patterns for extending the framework.
+> **Important:**  
+> All reusable code lives under `src/linearbenchtree/`.  
+> Notebooks and scripts *consume* the package — they do not define it.
 
 ---
 
-## 🔧 1. Adding a New Model Family
+## 🔧 Development Setup (Required)
 
-Every model family in the project follows the same structure:
+If you are extending the framework, you should be working in **editable mode**.
 
-```
-src/
-  newmodel/
-    __init__.py
-    train_newmodel.py
-    predict_newmodel.py
-    evaluate_newmodel.py
-    parameter_opt.py   (optional)
-```
+```bash
+pip install -e ".[dev]"
+````
 
-### **Step‑by‑Step**
+This ensures:
 
-#### **1. Create a new subpackage**
-Example:
+*   changes to `.py` files are picked up immediately
+*   imports behave the same as a real install
+*   notebooks and tests reflect package behavior
 
-```
-src/xgboost/
-```
-
-#### **2. Add the core modules**
-At minimum, include:
-
-- `train_xgboost.py`  
-- `predict_xgboost.py`  
-- `evaluate_xgboost.py`  
-
-Each should follow the same function signatures as existing models:
+During notebook development, enable autoreload:
 
 ```python
-def train_xgboost(X_train, Y_train, ...):
+%load_ext autoreload
+%autoreload 2
+```
+
+***
+
+## 📦 Package Boundary (Non‑Negotiable Rule)
+
+    src/
+    └── linearbenchtree/
+
+### ✅ Allowed
+
+*   add new subpackages under `linearbenchtree/`
+*   import using `linearbenchtree.<module>`
+
+### ❌ Not allowed
+
+*   importing from repo‑relative paths
+*   adding logic directly to notebooks
+*   assuming the working directory
+
+This ensures `pip install .` works for all users.
+
+***
+
+## 🔧 1. Adding a New Model Family
+
+Each model family is a **subpackage** under `linearbenchtree/`.
+
+### Example structure
+
+    src/linearbenchtree/
+    └── xgboost/
+        ├── __init__.py
+        ├── train_xgboost.py
+        ├── predict_xgboost.py
+        ├── evaluate_xgboost.py
+        └── parameter_opt.py   # optional
+
+### Step‑by‑step
+
+#### 1️⃣ Create the subpackage
+
+```bash
+mkdir src/linearbenchtree/xgboost
+touch src/linearbenchtree/xgboost/__init__.py
+```
+
+#### 2️⃣ Implement core functions
+
+Each model should expose predictable functions:
+
+```python
+def train_xgboost(X_train, y_train, **kwargs):
     ...
 
 def predict_xgboost(model, X):
     ...
 
-def evaluate_xgboost(Y_true, Y_pred):
+def evaluate_xgboost(y_true, y_pred):
     ...
 ```
 
-This ensures compatibility with the notebook and any future automation.
+This consistency allows:
 
-#### **3. (Optional) Add hyperparameter tuning**
-If the model supports tuning, add:
+*   notebook reuse
+*   future automation
+*   fair model comparison
 
-```
-parameter_opt.py
-```
+#### 3️⃣ (Optional) Add hyperparameter tuning
 
-Use the same return structure as other tuning modules:
+If applicable, include `parameter_opt.py` that returns:
 
 ```python
 {
     "model": best_estimator,
     "params": best_params,
     "cv_results": search.cv_results_,
-    "search": search
+    "search": search,
 }
 ```
 
-#### **4. Import and use in the notebook**
-Add a new section in the analysis notebook:
+***
 
-- Train  
-- Predict  
-- Evaluate  
-- Compare MAE%  
-- Visualize feature importance (if applicable)
+## 🧩 2. Adding New Dataset Features
 
----
+All feature engineering lives in:
 
-## 🧩 2. Adding New Features to the Dataset
+    linearbenchtree/dataprocessing/dataset_creation.py
 
-If you want to expand beyond the 12‑month rolling window:
+You may:
 
-### **Modify `dataset_creation.py`**
-
-You can:
-
-- change the window size  
-- add lagged features  
-- add moving averages  
-- add seasonal indicators  
-- incorporate external regressors  
+*   change window sizes
+*   add lagged features
+*   add rolling statistics
+*   add external regressors
 
 Example:
 
@@ -101,116 +131,157 @@ Example:
 df["MA_3"] = df["sales"].rolling(3).mean()
 ```
 
-Just ensure the new features are included in the final `X_train` and `X_test` matrices.
+Ensure all new features are included in:
 
----
+*   `X_train`
+*   `X_test`
+
+***
 
 ## 📊 3. Adding New Evaluation Metrics
 
-All models currently use **MAE%**, but you can easily add:
+Current default metric is **MAE%**, but others can be added.
 
-- RMSE  
-- MAPE  
-- SMAPE  
-- R²  
-- Weighted metrics  
+### Option A — Extend existing baseline module
 
-Add new functions to:
+    linearbenchtree/dataprocessing/benchmark_linear_regr.py
 
+### Option B — Create a dedicated metrics module
+
+    linearbenchtree/evaluation/metrics.py
+
+Recommended metrics:
+
+*   RMSE
+*   MAPE / SMAPE
+*   R²
+*   weighted metrics
+
+***
+
+## 🎨 4. Adding Visualizations
+
+Visualizations are **not part of the core package** unless they are reusable.
+
+### ✅ Notebook‑only visuals
+
+    notebooks/analysis/
+
+### ✅ Reusable plots
+
+    linearbenchtree/visualization/plots.py
+
+Examples:
+
+*   residual plots
+*   feature importance charts
+*   prediction vs actual overlays
+
+***
+
+## ➕ 5. Adding New Dependencies (Important)
+
+### Rule
+
+> If a module is imported anywhere under `src/linearbenchtree/`,
+> it **must** be declared in `pyproject.toml`.
+
+### Example
+
+If you add:
+
+```python
+import xgboost
 ```
-src/dataprocessing/benchmark_linear_regr.py
+
+Update `pyproject.toml`:
+
+```toml
+[project]
+dependencies = [
+  "xgboost>=2.0",
+]
 ```
 
-or create a dedicated module:
+### ✅ Use version *lower bounds*
 
-```
-src/evaluation/metrics.py
-```
+*   Do **not** pin exact versions
+*   Exact versions belong in `environment.yml`
 
-Then update the notebook to compute and compare them.
+After adding a dependency:
 
----
-
-## 🧠 4. Adding New Visualizations
-
-Common additions include:
-
-- Residual plots  
-- Error distributions  
-- Feature importance heatmaps  
-- Prediction intervals  
-- Model‑vs‑model scatter plots  
-
-Add these to:
-
-```
-notebooks/analysis/
+```bash
+pip uninstall linearbenchtree-suite
+pip install .
 ```
 
-or create a reusable plotting module:
+***
 
+## 🧪 6. Protecting Extensions with Tests
+
+Every new **public module or subpackage** should be import‑tested.
+
+Add to:
+
+    tests/test_imports.py
+
+Example:
+
+```python
+def test_xgboost_import():
+    import linearbenchtree.xgboost
 ```
-src/visualization/plots.py
+
+This prevents future refactors from breaking packaging.
+
+***
+
+## 🔁 7. Editable vs Normal Install (Extension Context)
+
+| Task                   | Install Mode |
+| ---------------------- | ------------ |
+| Developing / extending | Editable     |
+| Running notebooks      | Editable     |
+| Testing packaging      | Normal       |
+| CI / users             | Normal       |
+
+Always validate extensions with:
+
+```bash
+pip install .
 ```
 
----
+Editable installs can hide mistakes — normal installs expose them.
 
-## 🏗️ 5. Integrating External Models or Libraries
+***
 
-The framework is compatible with:
+## 🚀 8. Future Extension Paths
 
-- XGBoost  
-- LightGBM  
-- CatBoost  
-- Prophet  
-- ARIMA/SARIMA  
-- Neural networks (PyTorch, TensorFlow, Keras)
+The current architecture supports:
 
-Just follow the same modular pattern:
+*   CLI entry points
+*   configuration files (`yaml`)
+*   experiment tracking (MLflow, W\&B)
+*   orchestration pipelines
+*   productionization
 
-- `train_*`  
-- `predict_*`  
-- `evaluate_*`  
-- `optimize_*` (optional)
+These can be added without restructuring the package.
 
-This keeps the architecture clean and predictable.
-
----
-
-## 🚀 6. Automating the Entire Pipeline
-
-If you want to turn this into a production‑style pipeline, you can add:
-
-- a `main.py` orchestrator  
-- a configuration system (`config.yaml`)  
-- logging  
-- experiment tracking (MLflow, Weights & Biases)  
-- CLI commands  
-
-The current structure already supports this with minimal refactoring.
-
----
-
-## 🧩 7. Converting the Framework Into a Python Package
-
-If you want to pip‑install your own framework:
-
-1. Add a `pyproject.toml`  
-2. Add a `setup.cfg` or `setup.py`  
-3. Rename `src/` to a package name (e.g., `linearbenchtreesuite/`)  
-4. Publish to PyPI or install locally with `pip install -e .`
-
-This is a natural next step if you want to use the framework across multiple projects.
-
----
+***
 
 ## 🏁 Summary
 
-Extending LinearBenchTreeSuite is straightforward because the architecture is:
+Extending LinearBenchTreeSuite correctly means:
 
-- **modular**  
-- **consistent**  
-- **predictable**  
-- **well‑documented**  
+*   ✅ add code under `src/linearbenchtree/`
+*   ✅ use absolute package imports
+*   ✅ install in editable mode during development
+*   ✅ declare dependencies explicitly
+*   ✅ lock changes with import tests
 
-Whether you’re adding new models, new features, new metrics, or new workflows, the framework is designed to grow with you.
+Following these rules keeps the framework:
+
+*   predictable
+*   installable
+*   reusable
+*   contributor‑friendly
