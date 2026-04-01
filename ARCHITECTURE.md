@@ -1,260 +1,254 @@
-# 🏗️ LinearBenchTreeSuite — Architecture Overview
+# LinearBenchTreeSuite Architecture
 
-LinearBenchTreeSuite is structured as a **proper Python package** with a clear separation between:
+This document describes the architectural structure of LinearBenchTreeSuite,
+including public API boundaries, internal layers, and design rationale.
 
-- reusable library code
-- notebooks and experimentation
-- data storage
-- tests and packaging infrastructure
-
-This document explains how those layers fit together and how code flows through the system.
-
----
-
-## 🎯 Architectural Goals
-
-The architecture is designed to be:
-
-- **Modular** — each model family is isolated and interchangeable
-- **Package‑first** — all reusable logic is importable as a library
-- **Notebook‑friendly** — supports interactive ML workflows
-- **Extensible** — easy to add new models, features, and metrics
-- **Installable** — works with both editable and normal installs
+The goal of this architecture is to support:
+- clean benchmarking of regression models
+- extensibility without API breakage
+- reproducible evaluation
+- interpretability for tree-based models
 
 ---
 
-## 🧱 High‑Level Layered View
+## Architectural Overview
 
-```
+LinearBenchTreeSuite follows a **layered architecture** with strict separation
+between **public APIs** and **internal implementation details**.
 
-┌────────────────────────────────────────────┐
-│           User / Developer Layer           │
-│--------------------------------------------│
-│ • Jupyter notebooks                        │
-│ • Python scripts                           │
-│ • CLI / future automation                  │
-└────────────────────────────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────────┐
-│        LinearBenchTreeSuite Package        │
-│--------------------------------------------│
-│ src/linearbenchtree/                       │
-│ • dataprocessing                           │
-│ • decisiontree                             │
-│ • randomforest                             │
-│ • exrandomtree                             │
-└────────────────────────────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────────┐
-│              Data Layer                    │
-│--------------------------------------------│
-│ • data/processed/ CSVs                     │
-│ • external data sources                    │
-└────────────────────────────────────────────┘
+At a high level:
 
-```
-
-Only the **package layer** (`src/linearbenchtree/`) is installed and importable.
-
----
-
-## 📦 Package Boundary (Critical Concept)
-
-```
-
-src/
-└── linearbenchtree/
-├── dataprocessing/
-├── decisiontree/
-├── randomforest/
-├── exrandomtree/
-└── **init**.py
-
-```
-
-### Key rules
-
-- ✅ Everything under `src/linearbenchtree/` is **library code**
-- ✅ Everything outside is **not importable** after installation
-- ❌ Notebooks must never rely on repo‑relative imports
-- ❌ No logic should live directly in notebooks
-
-This ensures that:
-
-- `pip install .` behaves like a real user install
-- editable installs behave identically to normal installs (except for reload behavior)
-- packaging tests are meaningful
-
----
-
-## 🔧 Core Package Modules
-
-### `dataprocessing/` — Data Preparation & Baselines
-
-Responsibilities:
-- load processed datasets
-- construct rolling‑window supervised datasets
-- provide baseline models and evaluation helpers
-
-Key modules:
-- `data_loader_processed.py`
-- `dataset_creation.py`
-- `benchmark_linear_regr.py`
-
-This layer is **model‑agnostic** and feeds all downstream models.
-
----
-
-### `decisiontree/` — Decision Tree Models
-
-Responsibilities:
-- train, predict, and evaluate decision trees
-- hyperparameter optimization via `RandomizedSearchCV`
-
-Key modules:
-- `regression_tree.py`
-- `parameter_opt.py`
-
----
-
-### `randomforest/` — Random Forest Models
-
-Responsibilities:
-- ensemble training and prediction
-- feature importance extraction
-- hyperparameter tuning
-
-Key module:
-- `random_forest.py`
-
----
-
-### `exrandomtree/` — Extra Trees Models
-
-Responsibilities:
-- high‑variance ensemble modeling
-- evaluation and feature importance
-- hyperparameter tuning
-
-Key module:
-- `ex_random_tree.py`
-
----
-
-## 📓 Notebook Layer (Analysis & Exploration)
-
-```
-
-notebooks/
-└── analysis/
-└── LinearBenchTreeSuite\_Example.ipynb
-
+```text
+User Code / Notebooks
+        |
+        v
++-------------------------+
+|   Public API Domains    |
+|-------------------------|
+|  data | models | metrics|
++-------------------------+
+        |
+        v
++-------------------------+
+| Internal Implementations|
+|-------------------------|
+| dataprocessing          |
+| decisiontree            |
+| randomforest            |
+| exrandomtree            |
+| experiments             |
++-------------------------+
 ````
 
-Notebooks are **clients of the package**, not part of it.
+Only the **public API domains** are considered stable.
 
-They should:
-- import from `linearbenchtree.*`
-- orchestrate experiments
-- visualize results
-- never contain reusable logic
+***
 
-During development, notebooks typically use:
+## Public API Domains
+
+The public API is intentionally small and explicit. It consists of three domains:
+
+### 1. `linearbenchtree.data`
+
+**Responsibility**
+
+*   Load raw data
+*   Create supervised learning datasets
+*   Prepare train/test splits
+
+**Design constraints**
+
+*   No model logic
+*   No evaluation logic
+*   No experimentation code
+
+**Rationale**
+Keeping data concerns isolated allows dataset generation to evolve independently
+from modeling and evaluation.
+
+***
+
+### 2. `linearbenchtree.models`
+
+**Responsibility**
+
+*   Train models
+*   Generate predictions
+*   Provide interpretability helpers
+
+**Exposed concepts**
+
+*   `train_<model>()`
+*   `predict_<model>()`
+*   `get_feature_importance_<model>()` (when applicable)
+*   `benchmark()` for baseline comparison
+
+**Design constraints**
+
+*   No metric formulas
+*   No dataset creation
+*   No experiment orchestration
+
+**Rationale**
+Models should focus on **learning and inference**, not evaluation policy or
+experimental workflow.
+
+***
+
+### 3. `linearbenchtree.metrics`
+
+**Responsibility**
+
+*   Define evaluation metrics
+*   Ensure consistent scoring across models
+
+**Exposed concepts**
+
+*   `mae_percent(y_true, y_pred)`
+
+**Design constraints**
+
+*   Metrics must be model-agnostic
+*   No training logic
+*   No workflow orchestration
+
+**Rationale**
+Centralizing metrics prevents duplicated formulas, ensures comparability, and
+makes evaluation behavior explicit and testable.
+
+***
+
+## Internal Implementation Layers
+
+The following modules are **internal** and not part of the public API.
+
+### `dataprocessing/`
+
+*   Raw data loading helpers
+*   Feature engineering
+*   Dataset construction internals
+
+### `decisiontree/`
+
+*   Decision tree implementation details
+*   Internal evaluators and optimizers
+
+### `randomforest/`
+
+*   Random forest training logic
+*   Feature importance extraction
+*   Internal optimization routines
+
+### `exrandomtree/`
+
+*   Extra Trees training logic
+*   Feature importance extraction
+*   Hyperparameter tuning utilities
+
+### `experiments/`
+
+*   Exploratory workflows
+*   Model comparisons
+*   Notebook-oriented utilities
+*   Benchmark orchestration (e.g. train vs test comparisons)
+
+These modules may change freely without API guarantees.
+
+***
+
+## Evaluation Flow
+
+Evaluation is intentionally **compositional**, not implicit.
+
+Typical evaluation flow:
+
 ```python
-%load_ext autoreload
-%autoreload 2
-````
-
-This supports rapid iteration with editable installs.
-
-***
-
-## 📂 Data Layer
-
-    data/
-    ├── raw/
-    ├── interim/
-    ├── processed/
-    │   └── new_car_sales_by_make.csv
-    └── external/
-
-Design principles:
-
-*   data is **never packaged**
-*   paths are passed explicitly
-*   package code does not assume a working directory
-
-This keeps the library reusable across projects.
-
-***
-
-## 🧪 Tests & Packaging Infrastructure
-
-    tests/
-    └── test_imports.py
-
-Purpose:
-
-*   lock in packaging correctness
-*   ensure all public import paths remain valid
-*   prevent regressions during refactors
-
-These tests validate **structure**, not model behavior.
-
-***
-
-## 🔁 Editable vs Normal Install (Architectural Impact)
-
-### Editable install
-
-```bash
-pip install -e .
+model = train_forest(X_train, y_train)
+y_pred = predict_forest(model, X_test)
+score = mae_percent(y_test, y_pred)
 ```
 
-*   links Python directly to `src/linearbenchtree/`
-*   used for development and notebooks
-*   code changes picked up immediately (with autoreload)
+### Key principles
 
-### Normal install
+*   Metrics are applied **explicitly**
+*   Models do not own evaluation logic
+*   Evaluation behavior is transparent and reusable
 
-```bash
-pip install .
-```
-
-*   installs a built snapshot into `site-packages`
-*   mirrors user and CI behavior
-*   used to validate correctness
-
-The architecture supports **both** without modification.
+Model-specific `evaluate_*` helpers may exist internally but are not considered
+public API.
 
 ***
 
-## 🔌 Extension Points
+## Optimization Strategy
 
-The architecture is intentionally open at these points:
+Hyperparameter optimization is treated as **experimental infrastructure**.
 
-*   add new model families as new subpackages
-*   add metrics in a shared evaluation module
-*   add visualization utilities
-*   add orchestration layers (CLI, pipeline, config)
+### Characteristics
 
-See **EXTENDING.md** for concrete extension instructions.
+*   Encodes research choices
+*   May change scoring strategies
+*   May evolve parameter ranges
+
+### Architectural decision
+
+*   Optimization utilities remain internal
+*   They are excluded from the public API
+*   They may live in model modules or `experiments/`
+
+This preserves flexibility while preventing premature API lock-in.
 
 ***
 
-## 🏁 Summary
+## Feature Importance & Interpretability
 
-LinearBenchTreeSuite is architected as a **real Python package**, not just a notebook project:
+Feature importance is a **first-class capability** for tree-based models.
 
-*   reusable code lives in `src/linearbenchtree`
-*   notebooks consume the package
-*   data lives outside the package
-*   tests protect the structure
-*   editable installs support development
-*   normal installs support users
+### Architectural stance
 
-This foundation allows the project to scale from:
+*   Feature importance helpers are public API
+*   Outputs must be labeled and human-readable
+*   Raw model internals are not exposed
 
-> *exploratory analysis* → *reusable framework* → *production‑ready tool*
+This supports interpretability without coupling users to specific model classes.
+
+***
+
+## API Stability Guarantees
+
+The following are considered **stable within a major version**:
+
+*   `linearbenchtree.data`
+*   `linearbenchtree.models`
+*   `linearbenchtree.metrics`
+*   Functions explicitly documented in `README.md`
+
+Internal modules carry **no stability guarantees**.
+
+API stability is enforced through:
+
+*   import tests
+*   documentation
+*   CI validation
+
+***
+
+## Extensibility Summary
+
+When extending LinearBenchTreeSuite:
+
+*   Add new functionality internally first
+*   Expose only high-level concepts via public APIs
+*   Centralize metrics in `metrics`
+*   Keep experimentation and tuning internal
+*   Lock new APIs with import tests
+
+For step-by-step extension guidance, see `EXTENDING.md`.
+
+***
+
+## Architectural Philosophy
+
+> **Small APIs, explicit evaluation, internal freedom.**
+
+This philosophy enables rapid iteration without sacrificing reliability or
+clarity for users.

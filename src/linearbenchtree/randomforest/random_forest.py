@@ -26,6 +26,8 @@ from typing import Dict, Any, Optional
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import RandomizedSearchCV
 
+from linearbenchtree.metrics import mae_percent
+
 
 # ------------------------------------------------------------
 # Train model
@@ -116,6 +118,12 @@ def evaluate_forest(Y_true: np.ndarray, Y_pred: np.ndarray) -> float:
     """
     Compute MAE% relative to the mean of the true values.
 
+    MAE% is defined as:
+        mean(|actual - predicted|) / mean(actual)
+
+    This function delegates to the shared metrics API to ensure consistent
+    evaluation across all model families.
+
     Parameters
     ----------
     Y_true : np.ndarray
@@ -128,13 +136,13 @@ def evaluate_forest(Y_true: np.ndarray, Y_pred: np.ndarray) -> float:
     float
         MAE as a decimal (e.g., 0.12 = 12%).
     """
-    return np.mean(abs(Y_true - Y_pred)) / np.mean(Y_true)
+    return mae_percent(Y_true, Y_pred)
 
 
 # ------------------------------------------------------------
 # Feature Importance
 # ------------------------------------------------------------
-def get_feature_importance(model: RandomForestRegressor, X_train: np.ndarray) -> pd.DataFrame:
+def get_feature_importance_forest(model: RandomForestRegressor, X_train: np.ndarray) -> pd.DataFrame:
     """
     Return a DataFrame of feature importances labeled as:
     Month (t-12), ..., Month (t-1)

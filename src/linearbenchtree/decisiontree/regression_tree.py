@@ -20,6 +20,8 @@ import numpy as np
 from typing import Optional
 from sklearn.tree import DecisionTreeRegressor
 
+from linearbenchtree.metrics import mae_percent
+
 
 def train_tree(
     X_train: np.ndarray,
@@ -85,6 +87,9 @@ def evaluate_tree(Y_true: np.ndarray, Y_pred: np.ndarray) -> float:
     MAE% is defined as:
         mean(|actual - predicted|) / mean(actual)
 
+    This function delegates to the shared metrics API to ensure consistent
+    evaluation across all model families.
+
     Parameters
     ----------
     Y_true : np.ndarray
@@ -97,7 +102,7 @@ def evaluate_tree(Y_true: np.ndarray, Y_pred: np.ndarray) -> float:
     float
         MAE as a decimal (e.g., 0.12 = 12%).
     """
-    return np.mean(abs(Y_true - Y_pred)) / np.mean(Y_true)
+    return mae_percent(Y_true, Y_pred)
 
 
 def main() -> None:

@@ -2,161 +2,235 @@
   <img src="assets/LinearBenchTreeSuite_BannerS.png" alt="LinearBenchTreeSuite Banner" width="100%">
 </p>
 
-# 📘 LinearBenchTreeSuite  
-### A Modular, Installable Benchmarking Framework for Rolling‑Window Time‑Series Forecasting
 
-**Case Study: Monthly New‑Car Sales by Manufacturer**
+# LinearBenchTreeSuite
 
-LinearBenchTreeSuite is a modular, extensible machine‑learning framework designed to benchmark multiple regression models on structured time‑series forecasting tasks. Using publicly available monthly new‑car sales data as a case study, the project evaluates four model families:
+LinearBenchTreeSuite is a lightweight, modular Python package for benchmarking
+linear and tree‑based regression models on time‑series and tabular datasets.
 
-- **Linear Regression** (baseline)
-- **Decision Tree**
-- **Random Forest**
-- **Extra Trees**
-
-The framework emphasizes **clarity**, **reproducibility**, and **extensibility**, and is now structured as a **proper Python package** that supports both normal and editable installs.
+The project emphasizes:
+- clean separation between **data**, **models**, and **metrics**
+- a small, stable **public API**
+- reproducible benchmarking workflows
+- interpretability via feature importance for tree models
 
 ---
 
-## 🌟 Key Features
+## Installation
 
-- **Package‑first architecture** — all reusable code lives under `src/linearbenchtree/`
-- **Modular model families** — consistent train / predict / evaluate / tune interfaces
-- **Rolling‑window dataset creation** — fair, supervised comparisons
-- **Unified evaluation metric (MAE%)**
-- **Feature importance extraction** for tree‑based models
-- **Hyperparameter optimization** via `RandomizedSearchCV`
-- **Notebook‑driven analysis**, backed by importable package code
+### From source (recommended for development)
 
----
-
-## 📦 Installation
-
-### Option 1: Normal install (recommended for users)
-
-Use this when you want to **use** the package without modifying it:
+From the project root:
 
 ```bash
 pip install .
 ````
 
-Or directly from GitHub:
+For editable (development) installs:
 
 ```bash
-pip install git+https://github.com/<your-username>/LinearBenchTreeSuite.git
+pip install -e .
 ```
 
-This mirrors how end users and CI systems install the package.
+### Package name vs import name
 
-***
-
-### Option 2: Editable install (recommended for development)
-
-Use this when you are **actively developing** the package or running notebooks:
+The package is distributed under the name:
 
 ```bash
-pip install -e ".[dev]"
+pip install linearbenchtree-suite
 ```
 
-Editable installs link Python directly to the source code, so changes to `.py` files are picked up immediately.
-
-***
-
-## 📓 Notebook Workflow (Development)
-
-When working in Jupyter notebooks during development:
-
-1.  Install the package in editable mode
-2.  Enable IPython autoreload at the top of the notebook:
+and imported in Python as:
 
 ```python
-%load_ext autoreload
-%autoreload 2
+import linearbenchtree
 ```
 
-This allows you to edit package code under `src/linearbenchtree/` and see changes without restarting the kernel.
 
 ***
 
-## 📂 Project Structure
+## Package Structure
 
 ```text
-project/
+linearbenchtree/
+├── data/        # Public data-loading and dataset creation API
+├── models/      # Public model training, prediction, and interpretation API
+├── metrics/     # Public evaluation metrics API
 │
-├── data/
-│   └── processed/
-│       └── new_car_sales_by_make.csv
-│
-├── notebooks/
-│   └── analysis/
-│       └── LinearBenchTreeSuite_Example.ipynb
-│
-├── src/
-│   └── linearbenchtree/
-│       ├── dataprocessing/
-│       ├── decisiontree/
-│       ├── randomforest/
-│       ├── exrandomtree/
-│       └── __init__.py
-│
-├── pyproject.toml
-├── ARCHITECTURE.md
-├── EXTENDING.md
-└── README.md
+├── dataprocessing/   # Internal implementation details
+├── decisiontree/
+├── randomforest/
+├── exrandomtree/
+└── experiments/      # Experimental and exploratory workflows
 ```
 
-Only code under `src/linearbenchtree/` is installed and importable.
+Only `data`, `models`, and `metrics` are considered **public API domains**.
+All other modules are internal and may change without notice.
 
 ***
 
-## 🚀 Usage
+## Data API
 
-### Running the analysis notebook
-
-The primary demonstration notebook lives in:
-
-    notebooks/analysis/LinearBenchTreeSuite_Example.ipynb
-
-It demonstrates:
-
-*   dataset creation
-*   model training
-*   tuning
-*   evaluation
-*   visualization
-
-***
-
-### Using the package in scripts
-
-All model families expose consistent functions:
+The Data API provides utilities for loading raw data and constructing
+supervised learning datasets.
 
 ```python
-from linearbenchtree.dataprocessing.data_loader_processed import load_data
-from linearbenchtree.randomforest.random_forest import train_forest
+from linearbenchtree.data import (
+    load_raw_csv,
+    import_data,
+    datasets,
+)
 ```
 
-This makes the framework reusable outside notebooks.
+### Key functions
+
+*   `load_raw_csv()`  
+    Load a CSV file from the project’s data directory.
+
+*   `import_data()`  
+    Convenience wrapper around raw data loading.
+
+*   `datasets()`  
+    Create rolling‑window training and test datasets suitable for
+    time‑series regression.
 
 ***
 
-## 📐 Architecture & Extension
+## Model API
 
-*   For a system‑level view of how data, models, and notebooks interact, see  
-    ➡️ **ARCHITECTURE.md**
+The Model API exposes **high‑level, user‑facing model operations**:
+training, prediction, and interpretability.
 
-*   For guidance on adding new models, features, or metrics, see  
-    ➡️ **EXTENDING.md**
+```python
+from linearbenchtree.models import (
+    benchmark,
+    train_tree,
+    predict_tree,
+    train_forest,
+    predict_forest,
+    get_feature_importance_forest,
+    train_extratrees,
+    predict_extratrees,
+    get_feature_importance_extratrees,
+)
+```
+
+### Baseline
+
+*   `benchmark()`  
+    Train a linear regression baseline and generate predictions.
+    This serves as a reference point for all tree‑based models.
 
 ***
 
-## 🏁 Key Takeaways
+### Decision Tree
 
-*   Tree‑based models outperform Linear Regression for this task
-*   Extra Trees delivers the strongest overall accuracy
-*   Feature importance reveals which historical months matter most
-*   The framework is now:
-    *   installable
-    *   testable
-    *   extensible
-    *   reusable across projects
+*   `train_tree()`
+*   `predict_tree()`
+
+***
+
+### Random Forest
+
+*   `train_forest()`
+*   `predict_forest()`
+*   `get_feature_importance_forest()`
+
+Returns labeled feature importance values for interpretability.
+
+***
+
+### Extra Trees
+
+*   `train_extratrees()`
+*   `predict_extratrees()`
+*   `get_feature_importance_extratrees()`
+
+Returns labeled feature importance values for interpretability.
+
+***
+
+## Metrics API
+
+The Metrics API provides **model‑agnostic evaluation functions**.
+Metric logic is centralized here to ensure consistency across models.
+
+```python
+from linearbenchtree.metrics import mae_percent
+```
+
+### Available metrics
+
+*   `mae_percent(y_true, y_pred)`
+
+Mean Absolute Error expressed as a percentage of the mean true value:
+
+    mean(|actual − predicted|) / mean(actual)
+
+This is the **canonical evaluation metric** used throughout the project.
+
+***
+
+## Evaluation Philosophy
+
+*   Metrics (e.g. `mae_percent`) are **public and model‑agnostic**
+*   Model‑specific `evaluate_*` helpers exist internally for convenience
+*   Users are encouraged to compose evaluation explicitly:
+
+```python
+y_pred = predict_forest(model, X_test)
+score = mae_percent(y_test, y_pred)
+```
+
+This keeps evaluation flexible and extensible as new metrics are added.
+
+***
+
+## Optimization & Tuning (Internal)
+
+Hyperparameter optimization utilities (e.g. `optimize_*`) are intentionally
+**not part of the public API**.
+
+These functions:
+
+*   encode experimental choices
+*   may change as research evolves
+*   are safe to use internally and in notebooks
+
+They are not guaranteed to be stable across releases.
+
+***
+
+## Public API Guarantees
+
+The following are guaranteed to remain stable within a major version:
+
+*   `linearbenchtree.data`
+*   `linearbenchtree.models`
+*   `linearbenchtree.metrics`
+*   all functions explicitly documented in this README
+
+Internal modules are free to change.
+
+***
+
+## Development & Extension
+
+For details on extending the project with new models or metrics, see:
+
+*   `EXTENDING.md`
+*   `ARCHITECTURE.md`
+
+***
+
+## License
+
+MIT License
+
+***
+
+See `VERSIONING.md` for API stability and compatibility guarantees.
+
+
+
+
