@@ -263,3 +263,6 @@ When extending LinearBenchTreeSuite:
 ✅ Lock APIs with import tests
 
 When in doubt, **favor simplicity and stability**.
+
+These rules exist to ensure external users can rely on the library
+while internal implementations evolve freely.

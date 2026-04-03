@@ -16,15 +16,41 @@ The project emphasizes:
 
 ---
 
+## Who This Is For
+
+LinearBenchTreeSuite is intended for:
+- data scientists benchmarking regression models
+- analysts building reproducible forecasting workflows
+- practitioners who want interpretable tree‑based models
+
+It is not intended to be a black‑box AutoML system.
+
+---
+
+
 ## Installation
 
-### From source (recommended for development)
+### Install from GitHub (recommended)
+
+The project is currently distributed directly via GitHub.
+
+```bash
+pip install git+https://github.com/<your-username>/LinearBenchTreeSuite.git
+````
+
+This installation method is recommended for:
+
+*   using the latest stable API
+*   running the included example notebooks
+*   extending the library with new models
+
+### Local development install
 
 From the project root:
 
 ```bash
 pip install .
-````
+```
 
 For editable (development) installs:
 
@@ -45,6 +71,8 @@ and imported in Python as:
 ```python
 import linearbenchtree
 ```
+
+A PyPI release is planned once the API matures further.
 
 
 ***
@@ -211,6 +239,9 @@ The following are guaranteed to remain stable within a major version:
 *   all functions explicitly documented in this README
 
 Internal modules are free to change.
+
+These guarantees allow users to depend on the library while new models
+and features are added over time.
 
 ***
 
