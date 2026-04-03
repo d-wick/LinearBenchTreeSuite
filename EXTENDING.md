@@ -1,216 +1,268 @@
-# 🧱 How to Extend This Framework  
-### Adding New Models, Features, or Workflows
+# EXTENDING LinearBenchTreeSuite
 
-LinearBenchTreeSuite was intentionally designed to be **modular**, **predictable**, and **easy to extend**. Whether you want to add a new model family, incorporate additional features, or build new evaluation workflows, the architecture supports clean, low‑friction expansion.
+This document describes how to extend LinearBenchTreeSuite with new models,
+metrics, or data workflows while preserving API stability and architectural
+consistency.
 
-This guide outlines the recommended patterns for extending the framework.
-
----
-
-## 🔧 1. Adding a New Model Family
-
-Every model family in the project follows the same structure:
-
-```
-src/
-  newmodel/
-    __init__.py
-    train_newmodel.py
-    predict_newmodel.py
-    evaluate_newmodel.py
-    parameter_opt.py   (optional)
-```
-
-### **Step‑by‑Step**
-
-#### **1. Create a new subpackage**
-Example:
-
-```
-src/xgboost/
-```
-
-#### **2. Add the core modules**
-At minimum, include:
-
-- `train_xgboost.py`  
-- `predict_xgboost.py`  
-- `evaluate_xgboost.py`  
-
-Each should follow the same function signatures as existing models:
-
-```python
-def train_xgboost(X_train, Y_train, ...):
-    ...
-
-def predict_xgboost(model, X):
-    ...
-
-def evaluate_xgboost(Y_true, Y_pred):
-    ...
-```
-
-This ensures compatibility with the notebook and any future automation.
-
-#### **3. (Optional) Add hyperparameter tuning**
-If the model supports tuning, add:
-
-```
-parameter_opt.py
-```
-
-Use the same return structure as other tuning modules:
-
-```python
-{
-    "model": best_estimator,
-    "params": best_params,
-    "cv_results": search.cv_results_,
-    "search": search
-}
-```
-
-#### **4. Import and use in the notebook**
-Add a new section in the analysis notebook:
-
-- Train  
-- Predict  
-- Evaluate  
-- Compare MAE%  
-- Visualize feature importance (if applicable)
+If you are adding functionality, **read this document before writing code**.
 
 ---
 
-## 🧩 2. Adding New Features to the Dataset
+## Guiding Principles
 
-If you want to expand beyond the 12‑month rolling window:
+LinearBenchTreeSuite follows a few core design principles:
 
-### **Modify `dataset_creation.py`**
+1. **Small, stable public APIs**
+2. **Clear separation of concerns**
+3. **Internal implementation freedom**
+4. **Explicit evaluation logic**
 
-You can:
+Extensions should reinforce these principles rather than weaken them.
 
-- change the window size  
-- add lagged features  
-- add moving averages  
-- add seasonal indicators  
-- incorporate external regressors  
+---
+
+## Public API Domains
+
+Only the following package domains are considered **public and stable**:
+
+- `linearbenchtree.data`
+- `linearbenchtree.models`
+- `linearbenchtree.metrics`
+
+Anything outside these namespaces is **internal** and may change without notice.
+
+If you are unsure where new code belongs, it is probably internal.
+
+---
+
+## Adding a New Model
+
+### 1. Create an internal implementation module
+
+Add your model implementation under an appropriate internal directory, for example:
+
+```text
+linearbenchtree/
+├── mynewmodel/
+│   ├── __init__.py
+│   └── my_model.py
+````
+
+This module may include:
+
+*   training logic
+*   prediction helpers
+*   optimization utilities
+*   debugging `main()` functions
+
+These files are **not public API**.
+
+***
+
+### 2. Define the public model interface
+
+Expose only high‑level functions via the **Model Public API**:
+
+*   `train_<model>()`
+*   `predict_<model>()`
+*   `get_feature_importance_<model>()` (if applicable)
+
+Do **not** expose:
+
+*   optimization routines
+*   parameter search helpers
+*   experiment orchestration logic
+
+Add the public exports to:
+
+```python
+linearbenchtree/models/__init__.py
+```
 
 Example:
 
 ```python
-df["MA_3"] = df["sales"].rolling(3).mean()
+from ..mynewmodel.my_model import (
+    train_my_model,
+    predict_my_model,
+)
+
+__all__ = [
+    "train_my_model",
+    "predict_my_model",
+]
 ```
 
-Just ensure the new features are included in the final `X_train` and `X_test` matrices.
+***
 
----
+### 3. Evaluation logic
 
-## 📊 3. Adding New Evaluation Metrics
+Model implementations **must not define new metric formulas**.
 
-All models currently use **MAE%**, but you can easily add:
+All evaluation metrics belong in the `metrics` domain.
 
-- RMSE  
-- MAPE  
-- SMAPE  
-- R²  
-- Weighted metrics  
+Correct usage:
 
-Add new functions to:
+```python
+from linearbenchtree.metrics import mae_percent
 
-```
-src/dataprocessing/benchmark_linear_regr.py
+score = mae_percent(y_true, y_pred)
 ```
 
-or create a dedicated module:
+Model‑specific `evaluate_*` helpers may exist internally but are not part of the
+public API.
 
-```
-src/evaluation/metrics.py
-```
+***
 
-Then update the notebook to compute and compare them.
+### 4. Feature importance
 
----
+If your model supports interpretability:
 
-## 🧠 4. Adding New Visualizations
+✅ Expose a public `get_feature_importance_<model>()` function  
+✅ Return labeled, user‑readable outputs (e.g., DataFrames)  
+❌ Do not expose raw model internals
 
-Common additions include:
+Feature importance functions are considered **public API**.
 
-- Residual plots  
-- Error distributions  
-- Feature importance heatmaps  
-- Prediction intervals  
-- Model‑vs‑model scatter plots  
+***
 
-Add these to:
+## Adding a New Metric
 
-```
-notebooks/analysis/
-```
+Metrics are **first‑class API concepts**.
 
-or create a reusable plotting module:
+### 1. Add a metric implementation
 
-```
-src/visualization/plots.py
+Create a new file under:
+
+```text
+linearbenchtree/metrics/
 ```
 
----
+Example:
 
-## 🏗️ 5. Integrating External Models or Libraries
+```text
+metrics/
+├── mae.py
+├── rmse.py
+```
 
-The framework is compatible with:
+Each metric must:
 
-- XGBoost  
-- LightGBM  
-- CatBoost  
-- Prophet  
-- ARIMA/SARIMA  
-- Neural networks (PyTorch, TensorFlow, Keras)
+*   be model‑agnostic
+*   accept `(y_true, y_pred)`
+*   return a numeric scalar
 
-Just follow the same modular pattern:
+***
 
-- `train_*`  
-- `predict_*`  
-- `evaluate_*`  
-- `optimize_*` (optional)
+### 2. Expose the metric
 
-This keeps the architecture clean and predictable.
+Add the metric to:
 
----
+```python
+linearbenchtree/metrics/__init__.py
+```
 
-## 🚀 6. Automating the Entire Pipeline
+Example:
 
-If you want to turn this into a production‑style pipeline, you can add:
+```python
+from .rmse import rmse
 
-- a `main.py` orchestrator  
-- a configuration system (`config.yaml`)  
-- logging  
-- experiment tracking (MLflow, Weights & Biases)  
-- CLI commands  
+__all__ = ["rmse"]
+```
 
-The current structure already supports this with minimal refactoring.
+***
 
----
+### 3. Lock the metric API
 
-## 🧩 7. Converting the Framework Into a Python Package
+Add a minimal import test:
 
-If you want to pip‑install your own framework:
+```python
+def test_rmse_import():
+    from linearbenchtree.metrics import rmse
+    assert callable(rmse)
+```
 
-1. Add a `pyproject.toml`  
-2. Add a `setup.cfg` or `setup.py`  
-3. Rename `src/` to a package name (e.g., `linearbenchtreesuite/`)  
-4. Publish to PyPI or install locally with `pip install -e .`
+This ensures API stability without over‑specifying behavior.
 
-This is a natural next step if you want to use the framework across multiple projects.
+***
 
----
+## Optimization & Hyperparameter Tuning
 
-## 🏁 Summary
+Hyperparameter optimization utilities are considered **internal**.
 
-Extending LinearBenchTreeSuite is straightforward because the architecture is:
+They may:
 
-- **modular**  
-- **consistent**  
-- **predictable**  
-- **well‑documented**  
+*   use `GridSearchCV`, `RandomizedSearchCV`, or custom strategies
+*   change parameter ranges
+*   evolve over time
 
-Whether you’re adding new models, new features, new metrics, or new workflows, the framework is designed to grow with you.
+For this reason:
+
+❌ Do NOT expose `optimize_*()` functions as public API  
+✅ Keep them inside model modules or under `experiments/`  
+✅ Document them as experimental if used in notebooks
+
+Optimization behavior is **not version‑stable**.
+
+***
+
+## Experiments & Benchmarks
+
+Functions that:
+
+*   compare multiple models
+*   evaluate train vs test performance
+*   orchestrate workflows (e.g. `bench_test()`)
+
+belong to:
+
+*   internal modules
+*   notebooks
+*   `experiments/`
+
+They are intentionally excluded from the public API.
+
+***
+
+## Testing Expectations
+
+Every public API addition must include:
+
+✅ An import test  
+✅ Clear documentation  
+✅ Consistent naming
+
+Public API tests should:
+
+*   verify importability
+*   avoid running models
+*   avoid loading data
+
+***
+
+## Documentation Expectations
+
+When extending the project:
+
+*   Update `README.md` for user‑facing changes
+*   Update `ARCHITECTURE.md` for structural changes
+*   Keep `EXTENDING.md` aligned with new conventions
+
+Documentation is part of the API contract.
+
+***
+
+## Summary
+
+When extending LinearBenchTreeSuite:
+
+✅ Add models internally, expose them deliberately  
+✅ Centralize evaluation in `metrics`  
+✅ Expose feature importance where appropriate  
+✅ Keep optimization internal  
+✅ Lock APIs with import tests
+
+When in doubt, **favor simplicity and stability**.
+
+These rules exist to ensure external users can rely on the library
+while internal implementations evolve freely.

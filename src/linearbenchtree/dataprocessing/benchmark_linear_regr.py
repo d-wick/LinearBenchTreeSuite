@@ -21,6 +21,8 @@ from typing import Tuple
 
 from sklearn.linear_model import LinearRegression
 
+from linearbenchtree.metrics import mae_percent
+
 
 def benchmark(
     X_train: np.ndarray,
@@ -68,6 +70,10 @@ def bench_test(
     MAE% is defined as:
         mean(|actual - predicted|) / mean(actual)
 
+    This function is intentionally kept in the benchmark module because it
+    compares train vs test performance for a baseline workflow. The underlying
+    MAE% computation is delegated to the shared metrics API.
+
     Parameters
     ----------
     Y_train : np.ndarray
@@ -83,12 +89,12 @@ def bench_test(
     -------
     Tuple[float, float]
         MAE_train : float
-            Training MAE%.
+            Training MAE% as a decimal.
         MAE_test : float
-            Test MAE%.
+            Test MAE% as a decimal.
     """
-    MAE_train = np.mean(abs(Y_train - Y_train_pred)) / np.mean(Y_train)
-    MAE_test = np.mean(abs(Y_test - Y_test_pred)) / np.mean(Y_test)
+    MAE_train = mae_percent(Y_train, Y_train_pred)
+    MAE_test = mae_percent(Y_test, Y_test_pred)
     return MAE_train, MAE_test
 
 

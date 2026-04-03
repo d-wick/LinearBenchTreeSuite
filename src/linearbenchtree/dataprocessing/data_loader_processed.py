@@ -2,53 +2,44 @@
 data_loader_processed.py
 ------------------------
 
-This module provides utilities for loading processed datasets used in the
-LinearBenchTreeSuite forecasting pipeline.
+Utilities for loading processed datasets used by LinearBenchTreeSuite.
 
-It dynamically resolves the project root directory, locates the processed data
-folder, and exposes a single function:
-
-- `load_raw_csv()`: Loads a processed CSV file from the project's data directory.
-
-A `main()` function is included for quick debugging or validation.
+This module intentionally resolves data paths relative to the project root,
+not the package directory, to keep code and data cleanly separated.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
-from typing import Optional
 import pandas as pd
-
-# Dynamically determine project root (assumes this file is in src/dataprocessing/)
-ROOT_DIR: Path = Path(__file__).resolve().parents[2]
-DATA_DIR: Path = ROOT_DIR / "data" / "processed"
 
 
 def load_raw_csv(filename: str = "new_car_sales_by_make.csv") -> pd.DataFrame:
     """
-    Load a processed CSV file from the project's data/processed directory.
+    Load a processed CSV file from the project-level data directory.
 
     Parameters
     ----------
     filename : str, default="new_car_sales_by_make.csv"
-        Name of the CSV file to load.
+        Name of the CSV file located under `data/processed/`.
 
     Returns
     -------
     pd.DataFrame
-        The loaded dataset as a pandas DataFrame.
+        Loaded dataset.
 
     Raises
     ------
     FileNotFoundError
-        If the specified file does not exist in the processed data directory.
+        If the CSV file does not exist at the expected location.
     """
-    file_path: Path = DATA_DIR / filename
+    # Resolve project root: src/linearbenchtree/dataprocessing/ -> project root
+    project_root = Path(__file__).resolve().parents[3]
 
-    if not file_path.exists():
-        raise FileNotFoundError(f"{file_path} not found")
+    data_path = project_root / "data" / "processed" / filename
 
-    return pd.read_csv(file_path)
+    if not data_path.exists():
+        raise FileNotFoundError(f"Data file not found: {data_path}")
+
+    return pd.read_csv(data_path)
 
 
 def main() -> pd.DataFrame:

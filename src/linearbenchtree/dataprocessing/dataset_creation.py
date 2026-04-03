@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 from typing import Tuple
 
-from dataprocessing.data_loader_processed import load_raw_csv
+from linearbenchtree.dataprocessing.data_loader_processed import load_raw_csv
 
 
 def import_data() -> pd.DataFrame:
@@ -121,6 +121,7 @@ def datasets(
         Y_test = Y_test.ravel()
 
     return X_train, Y_train, X_test, Y_test
+
 
 
 def main() -> Tuple[pd.DataFrame, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
