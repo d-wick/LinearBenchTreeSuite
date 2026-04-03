@@ -7,6 +7,51 @@ This project follows **Semantic Versioning (SemVer)**:
 
 ---
 
+## [1.0.0] — Initial Public Release
+
+### Added
+- Stable public API domains:
+  - `linearbenchtree.data`
+  - `linearbenchtree.models`
+  - `linearbenchtree.metrics`
+- Linear regression benchmark model for baseline comparison
+- Decision Tree regression model
+- Random Forest regression model with feature importance support
+- Extra Trees regression model with feature importance support
+- Centralized, model‑agnostic evaluation metric:
+  - `mae_percent(y_true, y_pred)`
+- Example Data Science notebook demonstrating:
+  - model comparison
+  - train vs test evaluation
+  - feature importance analysis
+  - model selection rationale
+- Example Business notebook demonstrating:
+  - forward‑looking forecasts
+  - executive‑level outputs
+  - forecast confidence and limitations
+- Clear separation between:
+  - data loading
+  - model training and prediction
+  - evaluation metrics
+- Extension and contribution documentation:
+  - `CONTRIBUTING.md`
+  - `EXTENDING.md`
+  - `VERSIONING.md`
+
+### Design Decisions
+- Public API intentionally limited to a small, stable surface
+- Evaluation logic decoupled from model training
+- Hyperparameter optimization utilities treated as internal
+- Experiments and orchestration logic excluded from public API
+- Feature importance exposed only via explicit public functions
+
+### Stability
+- This release establishes the v1.x public API contract
+- Public APIs are guaranteed to remain backward‑compatible within v1.x
+- Internal modules may change without notice
+
+---
+
 ## [0.3.0] – Public API Formalization & Metrics Domain
 
 ### Added
