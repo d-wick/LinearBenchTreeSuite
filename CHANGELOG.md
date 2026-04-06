@@ -9,6 +9,8 @@ This project follows **Semantic Versioning (SemVer)**:
 
 ## [1.0.0] — Initial Public Release
 
+> Development for all future versions continues on the `main` branch.
+
 ### Added
 - Stable public API domains:
   - `linearbenchtree.data`

@@ -2,6 +2,7 @@
   <img src="assets/LinearBenchTreeSuite_BannerS.png" alt="LinearBenchTreeSuite Banner" width="100%">
 </p>
 
+> **Note:** The canonical development branch for this repository is `main`.
 
 # LinearBenchTreeSuite
 

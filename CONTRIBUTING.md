@@ -1,5 +1,7 @@
 # Contributing to LinearBenchTreeSuite
 
+> All development work and pull requests should target the `main` branch.
+
 Thank you for your interest in contributing to LinearBenchTreeSuite!
 
 This project is designed around a **stable public API** with room for
